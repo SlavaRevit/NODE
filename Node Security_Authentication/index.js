@@ -6,11 +6,15 @@ const express = require('express');
 const helmet = require('helmet');
 const passport = require('passport');
 const { Strategy } = require('passport-google-oauth20');
+const cookieSession = require('cookie-session');
+
 const PORT = 3000;
 
 const config = {
 	CLIENT_ID: process.env.CLIENT_ID,
 	CLIENT_PASSWORD: process.env.CLIENT_PASSWORD,
+	COOKIE_KEY_1: process.env.COOKIE_KEY_1,
+	COOKIE_KEY_2: process.env.COOKIE_KEY_2,
 };
 
 const AUTH_OPTIONS = {
@@ -26,13 +30,57 @@ function verifyCallback(accessToken, refreshToken, profile, done) {
 
 passport.use(new Strategy(AUTH_OPTIONS, verifyCallback));
 
-const app = express();
+// Save the session to cookie
+passport.serializeUser((user, done) => {
+	console.log('Serializing user:', user); // Add a log here
+	done(null, user.id);
+});
 
+// Read the session from the cookie
+passport.deserializeUser((user, done) => {
+	console.log(`iD is: ${user}`);
+	done(null, user);
+});
+
+const app = express();
 app.use(helmet());
-app.use(passport.initialize());
+
+app.use((req, res, next) => {
+	res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+	next();
+});
+
+//in new versions of passport .regenerate and .save makes mistake, and this
+// middleware needed to handle it.
+app.use(
+	cookieSession({
+		name: 'session',
+		maxAge: 24 * 60 * 60 * 1000, // 1 day
+		keys: ['key1', 'key2'], // Your secret keys,
+		sameSite: 'none',
+		secure: 'true',
+	})
+);
+
+app.use((req, res, next) => {
+	if (req.session && !req.session.regenerate) {
+		req.session.regenerate = cb => {
+			cb();
+		};
+	}
+	if (req.session && !req.session.save) {
+		req.session.save = cb => {
+			cb();
+		};
+	}
+	next();
+});
 
 function checkLoggedIn(req, res, next) {
-	const isLoggedIn = true;
+	console.log(`current user is ${req.id}`);
+	//isAuthenticated ---> coming from passport.
+	const isLoggedIn = req.user;
+	// console.log(isLoggedIn);
 	if (!isLoggedIn) {
 		return res.status(401).json({
 			error: 'You must log in',
@@ -40,6 +88,10 @@ function checkLoggedIn(req, res, next) {
 	}
 	next();
 }
+
+//sets passports session
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.get(
 	'/auth/google',
@@ -53,16 +105,14 @@ app.get(
 	passport.authenticate('google', {
 		failureRedirect: '/failure',
 		successRedirect: '/',
-		session: false,
+		session: true,
 	}),
 	(req, res) => {
-		console.loo(`Google called us back.`);
+		console.log(`Google called us back.`);
 	}
 );
 
 app.get('/auth/logout', (req, res) => {
-	res.clearCookie('connect.sid'); // Adjust cookie name if you're using a different one
-
 	res.json({
 		message: 'You have been logged out successfully',
 	});
