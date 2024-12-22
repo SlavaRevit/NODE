@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JetClientState">
+    <option name="draftsState">
+      <draftsState>
+        <option name="requests">
+          <list>
+            <requestState>
+              <option name="body">
+                <bodyState>
+                  <option name="type" value="JSON" />
+                </bodyState>
+              </option>
+              <option name="id" value="705217af-1b62-4de2-9f81-f9a26949cbf3" />
+              <option name="method" value="POST" />
+              <option name="name" value="Draft" />
+              <option name="url" value="localhost:3000" />
+            </requestState>
+          </list>
+        </option>
+      </draftsState>
+    </option>
+    <option name="id" value="4d3a5302-759c-4cba-a4f6-aed0fbf39305" />
+    <option name="version" value="5" />
+  </component>
+</project>
